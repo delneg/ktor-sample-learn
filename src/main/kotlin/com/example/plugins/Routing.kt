@@ -55,6 +55,18 @@ fun Application.configureRouting() {
                         { cust -> call.respond(status = HttpStatusCode.Created, cust) },
                         { err -> call.respond(status = HttpStatusCode.BadRequest, err) })
             }
+            post("{id}") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@post call.respondText(
+                    "Missing or malformed id",
+                    status = HttpStatusCode.BadRequest
+                )
+                val repo = CustomerRepository(client)
+                val req = call.receive<CustomerReq>()
+                repo.createOrUpdate(Customer(id,req.firstName, req.lastName, req.email))
+                    .mapBoth(
+                        { cust -> call.respond(status = HttpStatusCode.Accepted, cust) },
+                        { err -> call.respond(status = HttpStatusCode.BadRequest, err) })
+            }
 //            delete("{id}") {
 //                val id = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respondText(
 //                    "Missing or malformed id",
