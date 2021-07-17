@@ -12,11 +12,12 @@ import io.ktor.serialization.*
 import io.vertx.kotlin.sqlclient.getConnectionAwait
 import io.vertx.sqlclient.SqlConnection
 
-fun Application.module(){
+fun Application.module() {
     install(ContentNegotiation) {
         json()
     }
 }
+
 fun Application.configureRouting() {
 
 
@@ -50,7 +51,7 @@ fun Application.configureRouting() {
             post {
                 val req = call.receive<CustomerReq>()
                 val repo = CustomerRepository(client)
-                repo.createOrUpdate(Customer(null,req.firstName, req.lastName, req.email))
+                repo.createOrUpdate(Customer(null, req.firstName, req.lastName, req.email))
                     .mapBoth(
                         { cust -> call.respond(status = HttpStatusCode.Created, cust) },
                         { err -> call.respond(status = HttpStatusCode.BadRequest, err) })
@@ -62,27 +63,22 @@ fun Application.configureRouting() {
                 )
                 val repo = CustomerRepository(client)
                 val req = call.receive<CustomerReq>()
-                repo.createOrUpdate(Customer(id,req.firstName, req.lastName, req.email))
+                repo.createOrUpdate(Customer(id, req.firstName, req.lastName, req.email))
                     .mapBoth(
                         { cust -> call.respond(status = HttpStatusCode.Accepted, cust) },
                         { err -> call.respond(status = HttpStatusCode.BadRequest, err) })
             }
-//            delete("{id}") {
-//                val id = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respondText(
-//                    "Missing or malformed id",
-//                    status = HttpStatusCode.BadRequest
-//                )
-//
-//                val removed = customerStorage.removeIf { it.id == id }
-//                if (!removed) {
-//                    call.respondText(
-//                        "No customer with id $id",
-//                        status = HttpStatusCode.NotFound
-//                    )
-//                } else {
-//                    call.respondText("Deleted", status = HttpStatusCode.Accepted)
-//                }
-//            }
+            delete("{id}") {
+                val id = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respondText(
+                    "Missing or malformed id",
+                    status = HttpStatusCode.BadRequest
+                )
+
+                val repo = CustomerRepository(client)
+                repo.delete(id).mapBoth(
+                    { Unit -> call.respond(status = HttpStatusCode.NoContent, Unit) },
+                    { err -> call.respond(status = HttpStatusCode.BadRequest, err) })
+            }
         }
     }
 

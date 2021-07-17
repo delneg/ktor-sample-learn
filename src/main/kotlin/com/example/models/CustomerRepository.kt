@@ -48,6 +48,31 @@ class CustomerRepository(private val pool: PgPool) {
         }
     }
 
+
+    suspend fun delete(id: Int): Result<Unit,CustomerError> {
+        val conn = pool.connection.await()
+        try {
+            return conn.transactionallyAwait { transaction ->
+                val existsQ = """select 1 from customers where id = ${id}"""
+                val exists = conn.prepare(existsQ).await().query().execute().await().rowCount() > 0
+                if (!exists) {
+                    Err(
+                        CustomerError(
+                            CustomerErrorType.CUSTOMER_DOESNT_EXIST,
+                            "No customer exists with id ${id}"
+                        )
+                    )
+                } else {
+                    val q =
+                        """delete from customers where "id" = $1"""
+                    conn.prepare(q).await().query().execute(Tuple.of(id)).await()
+                    Ok(Unit)
+                }
+            }
+        } finally {
+            conn.close().await()
+        }
+    }
     suspend fun createOrUpdate(customer: Customer): Result<Customer, CustomerError> {
         val conn = pool.connection.await()
         if (customer.id == null) {
